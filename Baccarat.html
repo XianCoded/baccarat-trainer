@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baccarat Master Trainer • Pro</title>
+    <style>
+        :root {
+            --gold: #ffd700;
+            --green: #1a472a;
+            --table: #2d5a3f;
+            --blue: #2196f3;
+            --red: #d32f2f;
+            --correct: #4caf50;
+            --wrong: #f44336;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--green);
+            color: white;
+            margin: 0;
+            padding: 16px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { margin: 8px 0 4px; font-size: 1.9rem; }
+        #status { font-size: 0.75rem; color: #aaa; margin-bottom: 12px; }
+        .table {
+            width: 100%;
+            max-width: 920px;
+            background: var(--table);
+            border: 10px solid #5d4037;
+            border-radius: 36px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        .hand-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .hand-box {
+            text-align: center;
+            min-width: 260px;
+            background: rgba(0,0,0,0.25);
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+        .score-badge {
+            background: var(--gold);
+            color: black;
+            padding: 6px 18px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1.25rem;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .natural { background: #673ab7; color: white; }
+        .cards {
+            font-size: 3.8rem;
+            line-height: 1.4;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            min-height: 100px;
+            flex-wrap: wrap;
+        }
+        .card { text-shadow: 0 2px 6px rgba(0,0,0,0.7); }
+        .red-card   { color: #ff5252; }
+        .black-card { color: white; }
+        #feedback {
+            text-align: center;
+            min-height: 2.4em;
+            margin: 16px 0;
+            font-weight: bold;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 10px;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        button {
+            padding: 14px 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.18s;
+            text-transform: uppercase;
+            font-size: 1rem;
+        }
+        button:active { transform: scale(0.96); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-main   { grid-column: span 2; background: var(--gold); color: #111; font-size: 1.15rem; }
+        .btn-action { background: var(--correct); color: white; }
+        .btn-stand  { background: var(--wrong); color: white; }
+        .btn-hint   { grid-column: span 2; background: var(--blue); color: white; }
+        .btn-small  { background: #555; color: #eee; font-size: 0.8rem; padding: 8px 12px; }
+        #stats {
+            margin-top: 24px;
+            font-size: 0.92rem;
+            color: #ddd;
+            text-align: center;
+            border-top: 1px solid #444;
+            padding-top: 16px;
+            width: 100%;
+            max-width: 920px;
+        }
+        .progress-bar {
+            width: 100%;
+            background: #333;
+            height: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+            display: none;
+        }
+        #progress-fill {
+            width: 0;
+            height: 100%;
+            background: var(--blue);
+            transition: width 0.1s;
+        }
+        #rules-panel {
+            display: none;
+            margin-top: 20px;
+            background: rgba(0,0,0,0.4);
+            padding: 16px;
+            border-radius: 12px;
+            max-width: 700px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        table.rules { border-collapse: collapse; margin: 12px auto; font-size: 0.8rem; color: white; }
+        table.rules th, table.rules td {
+            border: 1px solid #666;
+            padding: 4px 8px;
+            text-align: center;
+        }
+        table.rules th { background: #444; }
+    </style>
+</head>
+<body>
+
+<h1>Baccarat Master Trainer</h1>
+<div id="status">Initializing…</div>
+
+<div class="table">
+    <div class="hand-container">
+        <div class="hand-box">
+            <div class="score-badge" id="p-badge">PLAYER: <span id="p-total">–</span></div>
+            <div id="p-cards" class="cards"></div>
+        </div>
+        <div class="hand-box">
+            <div class="score-badge" id="b-badge">BANKER: <span id="b-total">–</span></div>
+            <div id="b-cards" class="cards"></div>
+        </div>
+    </div>
+
+    <div id="feedback">Press DEAL to begin</div>
+
+    <div class="controls">
+        <button id="deal-btn"    class="btn-main" onclick="deal()">DEAL HAND</button>
+        <button id="hit-btn"     class="btn-action" style="display:none" onclick="playerAction('HIT')">HIT</button>
+        <button id="stand-btn"   class="btn-stand"  style="display:none" onclick="playerAction('STAND')">STAND</button>
+        <button id="hint-btn"    class="btn-hint"   style="display:none" onclick="showHint()">💡 HINT</button>
+    </div>
+</div>
+
+<div id="stats">
+    <div>Correct: <span id="correct-count">0</span>  •  Wrong: <span id="wrong-count">0</span>  •  Streak: <span id="streak">0</span></div>
+    <div>Accuracy: <span id="accuracy">–</span>% &nbsp; | &nbsp; DB entries: <span id="db-count">0</span> / 28,561</div>
+    <div class="progress-bar" id="p-bar"><div id="progress-fill"></div></div>
+    <div style="margin:12px 0;">
+        <button class="btn-small" id="build-db-btn" onclick="precomputeAllHands()">Build Strategy DB (once)</button>
+        <button class="btn-small" onclick="toggleRules()">Show/Hide Rules</button>
+    </div>
+    
+    <div id="rules-panel">
+        
+        <strong>Baccarat Drawing Rules (Standard Punto Banco)</strong><br><br>
+        <strong>Player:</strong> Draws on 0–5, stands on 6–7, natural 8–9 stands.<br><br>
+        <strong>Banker:</strong>
+        <table class="rules">
+            <tr><th>Banker total</th><th>Player stands</th><th colspan="10">Player draws 3rd card of value</th></tr>
+            <tr><td>0–2</td><td>Draw</td><td colspan="10">Always draw</td></tr>
+            <tr><td>3</td><td>Draw</td><td>0-7: D</td><td>8: S</td><td>9: D</td></tr>
+            <tr><td>4</td><td>Draw</td><td>0-1: S</td><td>2-7: D</td><td>8-9: S</td></tr>
+            <tr><td>5</td><td>Draw</td><td>0-3: S</td><td>4-7: D</td><td>8-9: S</td></tr>
+            <tr><td>6</td><td>Stand</td><td>0-5: S</td><td>6-7: D</td><td>8-9: S</td></tr>
+            <tr><td>7</td><td>Stand</td><td colspan="10">Always stand</td></tr>
+        </table>
+    </div>
+</div>
+
+<script>
+// Logic Constants
+const cardRanks = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const cardValues = [1,2,3,4,5,6,7,8,9,0,0,0,0];
+const suitSymbols = ['♥','♦','♠','♣'];
+const colors = { gold: "#ffd700", blue: "#2196f3", correct: "#4caf50", wrong: "#f44336", white: "#ffffff" };
+
+let db, shoe = [];
+let game = { player: [], banker: [], phase: 'IDLE', key: '' };
+let stats = { correct: 0, wrong: 0, streak: 0, currentStreak: 0 };
+
+const el = {
+    pCards: document.getElementById('p-cards'),
+    bCards: document.getElementById('b-cards'),
+    pTotal: document.getElementById('p-total'),
+    bTotal: document.getElementById('b-total'),
+    pBadge: document.getElementById('p-badge'),
+    bBadge: document.getElementById('b-badge'),
+    feedback: document.getElementById('feedback'),
+    dealBtn: document.getElementById('deal-btn'),
+    hitBtn: document.getElementById('hit-btn'),
+    standBtn: document.getElementById('stand-btn'),
+    hintBtn: document.getElementById('hint-btn'),
+    dbCount: document.getElementById('db-count'),
+    correctEl: document.getElementById('correct-count'),
+    wrongEl: document.getElementById('wrong-count'),
+    streakEl: document.getElementById('streak'),
+    accEl: document.getElementById('accuracy')
+};
+
+// IndexedDB Initialization
+const request = indexedDB.open("BaccTrainerDB", 8);
+request.onupgradeneeded = e => {
+    db = e.target.result;
+    if (!db.objectStoreNames.contains("strategy")) {
+        db.createObjectStore("strategy", { keyPath: "key" });
+    }
+};
+request.onsuccess = e => {
+    db = e.target.result;
+    updateDbCount();
+    document.getElementById('status').textContent = "DB connected and ready.";
+};
+
+function updateDbCount() {
+    const tx = db.transaction("strategy", "readonly");
+    const req = tx.objectStore("strategy").count();
+    req.onsuccess = () => el.dbCount.textContent = req.result.toLocaleString();
+}
+
+async function precomputeAllHands() {
+    const btn = document.getElementById("build-db-btn");
+    btn.disabled = true;
+    document.getElementById('p-bar').style.display = 'block';
+    const fill = document.getElementById('progress-fill');
+
+    let count = 0;
+    const total = 13**4; // 28,561
+
+    for (let p1=0; p1<13; p1++) {
+        const tx = db.transaction("strategy", "readwrite");
+        const store = tx.objectStore("strategy");
+        
+        for (let p2=0; p2<13; p2++) {
+            for (let b1=0; b1<13; b1++) {
+                for (let b2=0; b2<13; b2++) {
+                    const pt = (cardValues[p1] + cardValues[p2]) % 10;
+                    let rec = pt <= 5 ? "HIT" : "STAND";
+                    store.put({ key: `${p1}-${p2}-${b1}-${b2}`, player: rec });
+                    count++;
+                }
+            }
+        }
+        fill.style.width = ((count / total) * 100) + "%";
+        // Wait for transaction to complete to prevent "Inactive" error
+        await new Promise(r => {
+            tx.oncomplete = r;
+        });
+        // Brief pause to allow UI thread to breathe
+        await new Promise(r => setTimeout(r, 0));
+    }
+    setFeedback("Strategy DB built successfully!", colors.gold);
+    updateDbCount();
+    btn.disabled = false;
+}
+
+function handValue(hand) {
+    return hand.reduce((s, c) => s + cardValues[cardRanks.indexOf(c.rank)], 0) % 10;
+}
+
+function resetShoe() {
+    shoe = [];
+    for (let d=0; d<8; d++) {
+        for (let s of suitSymbols) {
+            for (let r=0; r<13; r++) {
+                shoe.push({ rank: cardRanks[r], suit: s });
+            }
+        }
+    }
+    shoe.sort(() => Math.random() - 0.5);
+}
+
+function dealCard() {
+    if (shoe.length < 10) resetShoe();
+    return shoe.pop();
+}
+
+function deal() {
+    resetUI();
+    const c1 = dealCard(), c2 = dealCard(), c3 = dealCard(), c4 = dealCard();
+    game = {
+        player: [c1, c2],
+        banker: [c3, c4],
+        phase: 'PLAYER_DECISION',
+        key: `${cardRanks.indexOf(c1.rank)}-${cardRanks.indexOf(c2.rank)}-${cardRanks.indexOf(c3.rank)}-${cardRanks.indexOf(c4.rank)}`
+    };
+
+    renderHands();
+    const pv = handValue(game.player);
+    const bv = handValue(game.banker);
+
+    if (pv >= 8 || bv >= 8) {
+        setFeedback("Natural! Hand concludes.", colors.gold);
+        endHand();
+    } else {
+        setFeedback("Player: Hit or Stand?", colors.white);
+        toggleActionButtons(true);
+    }
+}
+
+function playerAction(choice) {
+    const pv = handValue(game.player);
+    const correct = pv <= 5 ? 'HIT' : 'STAND';
+
+    if (choice !== correct) {
+        setFeedback(`Wrong! Total ${pv} requires ${correct}.`, colors.wrong);
+        stats.wrong++;
+        stats.currentStreak = 0;
+        updateStats();
+        return;
+    }
+
+    stats.correct++;
+    stats.currentStreak++;
+    if (stats.currentStreak > stats.streak) stats.streak = stats.currentStreak;
+    updateStats();
+
+    setFeedback("Correct Move!", colors.correct);
+
+    if (correct === 'HIT') {
+        game.player.push(dealCard());
+        renderHands();
+    }
+
+    game.phase = 'BANKER_DECISION';
+    setTimeout(bankerDecision, 800);
+}
+
+function bankerDecision() {
+    const bv = handValue(game.banker);
+    const p3 = game.player.length === 3 ? cardValues[cardRanks.indexOf(game.player[2].rank)] : -1;
+
+    let shouldHit = false;
+    if (p3 === -1) { 
+        shouldHit = bv <= 5;
+    } else {
+        if (bv <= 2) shouldHit = true;
+        else if (bv === 3) shouldHit = p3 !== 8;
+        else if (bv === 4) shouldHit = p3 >= 2 && p3 <= 7;
+        else if (bv === 5) shouldHit = p3 >= 4 && p3 <= 7;
+        else if (bv === 6) shouldHit = p3 === 6 || p3 === 7;
+    }
+
+    const move = shouldHit ? 'HIT' : 'STAND';
+    setFeedback(`Banker ${move}s...`, colors.white);
+
+    if (shouldHit) {
+        game.banker.push(dealCard());
+        renderHands();
+    }
+
+    endHand();
+}
+
+function showHint() {
+    if (game.phase !== 'PLAYER_DECISION') {
+        setFeedback("Banker draws based on rule table.", colors.blue);
+        return;
+    }
+    const pv = handValue(game.player);
+    const hint = pv <= 5 ? "HIT" : "STAND";
+    setFeedback(`Hint: ${hint} (Player ${pv})`, colors.blue);
+}
+
+function renderHands() {
+    const cardHtml = (c) => {
+        const colorClass = (c.suit === '♥' || c.suit === '♦') ? 'red-card' : 'black-card';
+        return `<span class="card ${colorClass}">${c.rank}${c.suit}</span>`;
+    };
+    
+    el.pCards.innerHTML = game.player.map(cardHtml).join('');
+    el.bCards.innerHTML = game.banker.map(cardHtml).join('');
+
+    const pv = handValue(game.player);
+    const bv = handValue(game.banker);
+
+    el.pTotal.textContent = pv;
+    el.bTotal.textContent = bv;
+
+    el.pBadge.className = 'score-badge' + (pv >= 8 ? ' natural' : '');
+    el.bBadge.className = 'score-badge' + (bv >= 8 ? ' natural' : '');
+}
+
+function setFeedback(msg, color) {
+    el.feedback.textContent = msg;
+    el.feedback.style.color = color || "white";
+}
+
+function toggleActionButtons(show) {
+    el.dealBtn.style.display  = show ? 'none' : 'block';
+    el.hitBtn.style.display   = show ? 'block' : 'none';
+    el.standBtn.style.display = show ? 'block' : 'none';
+    el.hintBtn.style.display  = show ? 'block' : 'none';
+}
+
+function endHand() {
+    toggleActionButtons(false);
+    game.phase = 'IDLE';
+}
+
+function resetUI() {
+    el.pCards.innerHTML = el.bCards.innerHTML = '';
+    el.pTotal.textContent = el.bTotal.textContent = '–';
+    el.pBadge.className = el.bBadge.className = 'score-badge';
+}
+
+function updateStats() {
+    el.correctEl.textContent = stats.correct;
+    el.wrongEl.textContent   = stats.wrong;
+    el.streakEl.textContent  = stats.streak;
+    const total = stats.correct + stats.wrong;
+    el.accEl.textContent = total ? Math.round((stats.correct / total) * 100) : '–';
+}
+
+function toggleRules() {
+    const panel = document.getElementById('rules-panel');
+    panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+}
+
+resetShoe();
+</script>
+</body>
+</html>
